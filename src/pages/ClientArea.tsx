@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,14 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Loader2, 
-  User, 
-  Package, 
-  LogOut, 
-  Save, 
+import {
+  Loader2,
+  User,
+  Package,
+  LogOut,
+  Save,
   ShoppingBag,
   Clock,
   CheckCircle,
@@ -93,80 +93,35 @@ export default function ClientArea() {
 
   const fetchProfile = async () => {
     if (!user) return;
-    
-    setLoadingProfile(true);
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
 
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível carregar o perfil.",
-      });
-    } else if (data) {
-      setProfile(data);
-      setFormData({
-        full_name: data.full_name || "",
-        phone: data.phone || "",
-        address: data.address || "",
-        city: data.city || "",
-        province: data.province || "",
-        nif: data.nif || "",
-      });
-    }
     setLoadingProfile(false);
+    // TODO: Implement profile fetching when API endpoint is available
+    // Note: The current API (swagger.json) does not have /profiles endpoint
+    // Profiles are managed as part of user preferences
   };
 
   const fetchOrders = async () => {
     if (!user) return;
 
-    setLoadingOrders(true);
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível carregar os pedidos.",
-      });
-    } else {
-      setOrders(data || []);
-    }
     setLoadingOrders(false);
+    // TODO: Implement orders fetching when API endpoint is available
+    // The API has /orders endpoints, but needs integration with user orders
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !profile) return;
+    if (!user) return;
 
     setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update(formData)
-      .eq("user_id", user.id);
 
+    // TODO: Update user preferences using UserRepository
+    // For now, show a message
     setSaving(false);
 
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível guardar as alterações.",
-      });
-    } else {
-      toast({
-        title: "Perfil atualizado",
-        description: "As suas informações foram guardadas com sucesso.",
-      });
-    }
+    toast({
+      title: "Funcionalidade em desenvolvimento",
+      description: "A atualização de perfil será implementada em breve.",
+    });
   };
 
   const handleSignOut = async () => {
@@ -175,11 +130,7 @@ export default function ClientArea() {
   };
 
   if (authLoading || loadingProfile) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted">
-        <Loader2 className="h-8 w-8 animate-spin text-secondary" />
-      </div>
-    );
+    return <LoadingSpinner className="min-h-screen bg-muted" />;
   }
 
   return (

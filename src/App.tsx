@@ -18,6 +18,25 @@ import Auth from "./pages/Auth";
 import ClientArea from "./pages/ClientArea";
 import NotFound from "./pages/NotFound";
 
+// Admin imports
+import { AdminRoute } from "@/components/routing/admin-route";
+import { AdminLayout } from "@/components/layout/admin-layout";
+import AdminDashboard from "./pages/admin/dashboard";
+import ProductsList from "./pages/admin/products/list";
+import ProductForm from "./pages/admin/products/form";
+import CategoriesList from "./pages/admin/categories/list";
+import CategoryForm from "./pages/admin/categories/form";
+import OrdersList from "./pages/admin/orders/list";
+import OrderDetails from "./pages/admin/orders/details";
+import StockOverview from "./pages/admin/stock/overview";
+import StockAlertsList from "./pages/admin/stock/alerts/list";
+import StockAlertForm from "./pages/admin/stock/alerts/form";
+import CustomersList from "./pages/admin/customers/list";
+import CustomerDetails from "./pages/admin/customers/details";
+import PaymentsList from "./pages/admin/payments/list";
+import SettingsList from "./pages/admin/settings/index";
+import UserProfile from "./pages/admin/profile/index";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -28,8 +47,9 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Layout>
-              <Routes>
+            <Routes>
+              {/* Public Routes */}
+              <Route element={<Layout />}>
                 <Route path="/" element={<Home />} />
                 <Route path="/loja" element={<Loja />} />
                 <Route path="/produto/:id" element={<ProductDetails />} />
@@ -40,9 +60,33 @@ const App = () => (
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/minha-conta" element={<ClientArea />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Layout>
+              </Route>
+
+              {/* Admin Routes */}
+              <Route path="/admin" element={<AdminRoute element={<AdminLayout />} />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="products" element={<ProductsList />} />
+                <Route path="products/new" element={<ProductForm />} />
+                <Route path="products/:id/edit" element={<ProductForm />} />
+                <Route path="categories" element={<CategoriesList />} />
+                <Route path="categories/new" element={<CategoryForm />} />
+                <Route path="categories/:id/edit" element={<CategoryForm />} />
+                <Route path="orders" element={<OrdersList />} />
+                <Route path="orders/:id" element={<OrderDetails />} />
+                <Route path="stock" element={<StockOverview />} />
+                <Route path="stock/alerts" element={<StockAlertsList />} />
+                <Route path="stock/alerts/new" element={<StockAlertForm />} />
+                <Route path="stock/alerts/:id" element={<StockAlertForm />} />
+                <Route path="payments" element={<PaymentsList />} />
+                <Route path="customers" element={<CustomersList />} />
+                <Route path="customers/:id" element={<CustomerDetails />} />
+                <Route path="settings" element={<SettingsList />} />
+                <Route path="profile" element={<UserProfile />} />
+              </Route>
+
+              {/* 404 */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
           </BrowserRouter>
         </CartProvider>
       </AuthProvider>
