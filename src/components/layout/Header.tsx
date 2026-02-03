@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Phone, User, LogOut } from "lucide-react";
+import { Menu, X, Phone, User, LogOut, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import cmttechLogo from "@/assets/cmttech-logo.jpg";
 import { CartButton } from "@/components/cart/CartButton";
@@ -79,6 +79,12 @@ export function Header() {
                   <Link to="/minha-conta" className="cursor-pointer">
                     <User className="h-4 w-4 mr-2" />
                     Área de Cliente
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/meus-pedidos" className="cursor-pointer">
+                    <ShoppingBag className="h-4 w-4 mr-2" />
+                    Meus Pedidos
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

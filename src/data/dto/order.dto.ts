@@ -11,6 +11,21 @@ export interface OrderItemDTO {
     subtotal: number;
 }
 
+export interface OrderCreateDTO {
+    cliente_id: string;
+    endereco_entrega_id?: string | null;
+    endereco_faturacao_id?: string | null;
+    metodo_entrega_id?: string | null;
+    metodo_pagamento?: string;
+    cupom_codigo?: string | null;
+    notas_cliente?: string | null;
+    itens: {
+        produto_id: string;
+        variante_id?: string | null;
+        quantidade: number;
+    }[];
+}
+
 export interface CustomerDTO {
     id: string;
     first_name: string;

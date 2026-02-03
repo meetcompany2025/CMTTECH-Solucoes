@@ -10,7 +10,11 @@ import {
     Users,
     Bell,
     Settings,
-    User
+    User,
+    Truck,
+    Tag,
+    FileText,
+    Mail,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -26,12 +30,15 @@ const navigation = [
     { name: 'Produtos', href: '/admin/products', icon: Package },
     { name: 'Categorias', href: '/admin/categories', icon: FolderTree },
     { name: 'Stock', href: '/admin/stock', icon: Warehouse, end: true },
-    { name: 'Alertas', href: '/admin/stock/alerts', icon: Bell },
+    { name: 'Alertas Stock', href: '/admin/stock/alerts', icon: Bell },
     { name: 'Encomendas', href: '/admin/orders', icon: ShoppingCart },
     { name: 'Pagamentos', href: '/admin/payments', icon: CreditCard },
     { name: 'Clientes', href: '/admin/customers', icon: Users },
+    { name: 'Entrega', href: '/admin/delivery-methods', icon: Truck },
+    { name: 'Cupons', href: '/admin/coupons', icon: Tag },
+    { name: 'Notificações', href: '/admin/notifications', icon: Mail },
+    { name: 'Logs Auditoria', href: '/admin/audit-logs', icon: FileText },
     { name: 'Configurações', href: '/admin/settings', icon: Settings },
-    { name: 'Perfil', href: '/admin/profile', icon: User },
 ];
 
 export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Package, ShoppingCart, DollarSign, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
+import { Package, ShoppingCart, DollarSign, AlertTriangle, TrendingUp, TrendingDown, CreditCard, CheckCircle2, XCircle, Clock, RotateCcw } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { StatsCard } from '@/components/admin/stats-card';
 import { StatusBadge } from '@/components/admin/status-badge';
@@ -7,9 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { OrderRepository } from '@/data/repositories/order.repository.impl';
 import { ProductRepository } from '@/data/repositories/product.repository.impl';
 import { AnalyticsRepository } from '@/data/repositories/analytics.repository.impl';
+import { PaymentRepository } from '@/data/repositories/payment.repository.impl';
 import { Order } from '@/domain/entities/order.entity';
 import { Product } from '@/domain/entities/product.entity';
 import { AnalyticsDashboard } from '@/domain/entities/analytics.entity';
+import { PaymentStatistics } from '@/domain/entities/payment.entity';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,14 +33,22 @@ import {
 const orderRepository = new OrderRepository();
 const productRepository = new ProductRepository();
 const analyticsRepository = new AnalyticsRepository();
+const paymentRepository = new PaymentRepository();
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+const PAYMENT_COLORS = {
+    sucesso: '#22c55e',
+    pendente: '#f59e0b',
+    falha: '#ef4444',
+    reembolsado: '#6366f1'
+};
 
 export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [recentOrders, setRecentOrders] = useState<Order[]>([]);
     const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
     const [analytics, setAnalytics] = useState<AnalyticsDashboard | null>(null);
+    const [paymentStats, setPaymentStats] = useState<PaymentStatistics | null>(null);
 
     useEffect(() => {
         loadDashboardData();
@@ -49,13 +59,19 @@ export default function AdminDashboard() {
             setLoading(true);
 
             // Load repositories data
-            const [ordersData, productsData] = await Promise.all([
+            const [ordersData, productsData, paymentStatsData] = await Promise.all([
                 orderRepository.getAll({ limit: 5 }).catch(() => ({ orders: [], total: 0 })),
-                productRepository.getAll({ limit: 1000 }).catch(() => ({ products: [], total: 0 }))
+                productRepository.getAll({ limit: 1000 }).catch(() => ({ products: [], total: 0 })),
+                paymentRepository.getPaymentStats().catch(() => null)
             ]);
 
             setRecentOrders(ordersData.orders);
-            const lowStock = productsData.products.filter(p => p.stock_quantidade < 10);
+            setPaymentStats(paymentStatsData);
+            const lowStock = productsData.products.filter(p => {
+                // Check stock using variantes or default to 0
+                const stock = p.variantes?.reduce((sum, v) => sum + (v.stock_actual || 0), 0) || 0;
+                return stock < 10;
+            });
             setLowStockProducts(lowStock);
 
             // Load Analytics with individual fallback for each slice
@@ -178,10 +194,17 @@ export default function AdminDashboard() {
                     description="Valor médio por pedido"
                 />
                 <StatsCard
-                    title="Alertas de Stock"
-                    value={lowStockProducts.length}
-                    icon={<AlertTriangle className="text-rose-500" />}
-                    description={`${lowStockProducts.filter(p => p.stock_quantidade === 0).length} sem stock`}
+                    title="Taxa de Sucesso"
+                    value={paymentStats ? `${paymentStats.taxa_sucesso_percentual.toFixed(1)}%` : '0%'}
+                    icon={<CreditCard className="text-violet-500" />}
+                    description={
+                        <div className="flex items-center gap-1">
+                            <span className="text-emerald-500">{paymentStats?.total_sucesso || 0}</span>
+                            <span className="text-muted-foreground">de</span>
+                            <span>{paymentStats?.total_pagamentos || 0}</span>
+                            <span className="text-muted-foreground text-xs">pagamentos</span>
+                        </div>
+                    }
                 />
             </div>
 
@@ -314,6 +337,109 @@ export default function AdminDashboard() {
                 </Card>
             </div>
 
+            {/* Payment Statistics Section */}
+            {paymentStats && (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Valor Processado</CardTitle>
+                            <DollarSign className="h-4 w-4 text-emerald-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{formatCurrency(paymentStats.valor_total_processado)}</div>
+                            <p className="text-xs text-muted-foreground">Total em pagamentos confirmados</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Em Pendente</CardTitle>
+                            <Clock className="h-4 w-4 text-amber-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-amber-600">{formatCurrency(paymentStats.valor_em_pendente)}</div>
+                            <p className="text-xs text-muted-foreground">{paymentStats.total_pendente} pagamentos aguardando</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Reembolsado</CardTitle>
+                            <RotateCcw className="h-4 w-4 text-violet-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-violet-600">{formatCurrency(paymentStats.valor_reembolsado)}</div>
+                            <p className="text-xs text-muted-foreground">{paymentStats.total_reembolsado} reembolsos efectuados</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Método Preferido</CardTitle>
+                            <CreditCard className="h-4 w-4 text-blue-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold capitalize">{paymentStats.metodo_mais_usado || 'N/A'}</div>
+                            <p className="text-xs text-muted-foreground">
+                                {paymentStats.gateway_mais_usado ? `via ${paymentStats.gateway_mais_usado}` : 'Método mais utilizado'}
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* Payment Status Distribution */}
+            {paymentStats && (
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Estatísticas de Pagamentos</CardTitle>
+                            <CardDescription>Resumo do estado dos pagamentos</CardDescription>
+                        </div>
+                        <Link to="/admin/payments">
+                            <Button variant="ghost" size="sm" className="text-primary">Ver Todos</Button>
+                        </Link>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                            <div className="flex items-center gap-3 p-4 rounded-lg border bg-emerald-50 dark:bg-emerald-950/20">
+                                <div className="p-2 rounded-full bg-emerald-100 dark:bg-emerald-900">
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-emerald-600">{paymentStats.total_sucesso}</p>
+                                    <p className="text-sm text-muted-foreground">Sucesso</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 p-4 rounded-lg border bg-amber-50 dark:bg-amber-950/20">
+                                <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900">
+                                    <Clock className="h-5 w-5 text-amber-600" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-amber-600">{paymentStats.total_pendente}</p>
+                                    <p className="text-sm text-muted-foreground">Pendentes</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 p-4 rounded-lg border bg-red-50 dark:bg-red-950/20">
+                                <div className="p-2 rounded-full bg-red-100 dark:bg-red-900">
+                                    <XCircle className="h-5 w-5 text-red-600" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-red-600">{paymentStats.total_falha}</p>
+                                    <p className="text-sm text-muted-foreground">Falhas</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 p-4 rounded-lg border bg-violet-50 dark:bg-violet-950/20">
+                                <div className="p-2 rounded-full bg-violet-100 dark:bg-violet-900">
+                                    <RotateCcw className="h-5 w-5 text-violet-600" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-violet-600">{paymentStats.total_reembolsado}</p>
+                                    <p className="text-sm text-muted-foreground">Reembolsados</p>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Recent Orders */}
                 <Card>
@@ -395,10 +521,10 @@ export default function AdminDashboard() {
                                         </div>
                                         <div className="text-right flex-shrink-0">
                                             <p className="font-bold text-sm text-rose-500">
-                                                {product.stock_quantidade} un.
+                                                {product.variantes?.reduce((sum, v) => sum + (v.stock_actual || 0), 0) || 0} un.
                                             </p>
                                             <StatusBadge
-                                                status={product.stock_quantidade === 0 ? 'sem_stock' : 'baixo'}
+                                                status={(product.variantes?.reduce((sum, v) => sum + (v.stock_actual || 0), 0) || 0) === 0 ? 'sem_stock' : 'baixo'}
                                                 variant="stock"
                                             />
                                         </div>

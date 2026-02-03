@@ -41,4 +41,22 @@ export class OrderDataSource {
         const response = await httpClient.put<OrderResponseDTO>(`${this.basePath}/${id}`, dto);
         return OrderMapper.toDomain(response.data);
     }
+
+    async createOrder(orderData: {
+        cliente_id: string;
+        endereco_entrega_id?: string;
+        metodo_entrega_id?: string;
+        metodo_pagamento: string;
+        cupom_codigo?: string;
+        notas_cliente?: string;
+        itens: {
+            produto_id: string;
+            variante_id?: string;
+            quantidade: number;
+            preco_unitario: number;
+        }[];
+    }): Promise<Order> {
+        const response = await httpClient.post<OrderResponseDTO>(`${this.basePath}/`, orderData);
+        return OrderMapper.toDomain(response.data);
+    }
 }

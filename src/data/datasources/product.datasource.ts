@@ -116,15 +116,15 @@ export class ProductDataSource {
         if (params?.preco_min) queryParams.append('preco_min', params.preco_min.toString());
         if (params?.preco_max) queryParams.append('preco_max', params.preco_max.toString());
 
-        const response = await httpClient.get<ProductResponseDTO[]>(
+        const response = await httpClient.get<{ produtos: ProductResponseDTO[], pagination: any }>(
             `${this.basePath}/search?${queryParams.toString()}`
         );
 
-        const products = response.data.map(dto => ProductMapper.toDomain(dto));
+        const products = response.data.produtos.map(dto => ProductMapper.toDomain(dto));
 
         return {
             products,
-            total: products.length,
+            total: response.data.pagination?.total_items || products.length,
         };
     }
 }

@@ -65,8 +65,8 @@ export default function Auth() {
       toast({
         variant: "destructive",
         title: "Erro ao entrar",
-        description: error.message === "Invalid login credentials" 
-          ? "Email ou password incorretos" 
+        description: error.message === "Invalid auth credentials" 
+          ? "Email ou password incorrects" 
           : error.message,
       });
     } else {
@@ -103,7 +103,7 @@ export default function Auth() {
         toast({
           variant: "destructive",
           title: "Erro ao registar",
-          description: "Este email já está registado. Tente fazer login.",
+          description: "Este email já está registado. Tente fazer auth.",
         });
       } else {
         toast({

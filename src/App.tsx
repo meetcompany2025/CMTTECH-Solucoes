@@ -16,6 +16,8 @@ import Contactos from "./pages/Contactos";
 import Checkout from "./pages/Checkout";
 import Auth from "./pages/Auth";
 import ClientArea from "./pages/ClientArea";
+import UserOrders from "./pages/UserOrders";
+import OrderSuccess from "./pages/OrderSuccess";
 import NotFound from "./pages/NotFound";
 
 // Admin imports
@@ -34,8 +36,12 @@ import StockAlertForm from "./pages/admin/stock/alerts/form";
 import CustomersList from "./pages/admin/customers/list";
 import CustomerDetails from "./pages/admin/customers/details";
 import PaymentsList from "./pages/admin/payments/list";
+import DeliveryMethodsList from "./pages/admin/sales/delivery-methods";
+import CouponsList from "./pages/admin/sales/coupons";
 import SettingsList from "./pages/admin/settings/index";
 import UserProfile from "./pages/admin/profile/index";
+import AuditLogsList from "./pages/admin/audit-logs/index";
+import NotificationsList from "./pages/admin/notifications/index";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +66,8 @@ const App = () => (
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/minha-conta" element={<ClientArea />} />
+                <Route path="/meus-pedidos" element={<UserOrders />} />
+                <Route path="/order-success/:orderId" element={<OrderSuccess />} />
               </Route>
 
               {/* Admin Routes */}
@@ -80,6 +88,10 @@ const App = () => (
                 <Route path="payments" element={<PaymentsList />} />
                 <Route path="customers" element={<CustomersList />} />
                 <Route path="customers/:id" element={<CustomerDetails />} />
+                <Route path="delivery-methods" element={<DeliveryMethodsList />} />
+                <Route path="coupons" element={<CouponsList />} />
+                <Route path="notifications" element={<NotificationsList />} />
+                <Route path="audit-logs" element={<AuditLogsList />} />
                 <Route path="settings" element={<SettingsList />} />
                 <Route path="profile" element={<UserProfile />} />
               </Route>

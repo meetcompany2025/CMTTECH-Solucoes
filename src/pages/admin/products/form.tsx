@@ -28,7 +28,7 @@ import { ProductRepository } from '@/data/repositories/product.repository.impl';
 import { CategoryRepository } from '@/data/repositories/category.repository.impl';
 import { StockRepositoryImpl } from '@/data/repositories/stock.repository.impl';
 import { StockDataSource } from '@/data/datasources/stock.datasource';
-import { ProductCreate, ProductUpdate, ProductVariant } from '@/domain/entities/product.entity';
+import { ProductCreate, ProductUpdate } from '@/domain/entities/product.entity';
 import { Category } from '@/domain/entities/category.entity';
 import { ImageUpload } from '@/components/admin/image-upload';
 import { Plus, Trash2, Video } from 'lucide-react';
@@ -53,7 +53,6 @@ export default function ProductForm() {
     const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
 
     // Stock tracking to detect changes
-    const [initialStock, setInitialStock] = useState<number | null>(null);
     const [initialVariantsStock, setInitialVariantsStock] = useState<Record<string, number>>({});
 
     const form = useForm<ProductCreate>({
@@ -84,8 +83,6 @@ export default function ProductForm() {
             meta_description: '',
             meta_keywords: '',
             variantes: [],
-            // Backward compatibility fields
-            stock_quantidade: 0,
         },
     });
 
@@ -151,11 +148,8 @@ export default function ProductForm() {
                 meta_description: product.meta_description || '',
                 meta_keywords: product.meta_keywords || '',
                 variantes: product.variantes || [],
-                stock_quantidade: product.stock_quantidade,
-                marca: product.marca || '',
             });
 
-            setInitialStock(product.stock_quantidade);
             const variantStockMap: Record<string, number> = {};
             product.variantes?.forEach(v => {
                 if (v.id) variantStockMap[v.id] = v.stock_actual;
@@ -181,7 +175,7 @@ export default function ProductForm() {
             const submitData = {
                 ...data,
                 // Ensure correct field names for API
-                activo: data.activo ?? (data as any).ativo
+                activo: data.activo ?? (data as any).activo
             };
 
             if (isEditing) {
@@ -198,16 +192,6 @@ export default function ProductForm() {
 
             // Handle Stock Updates (Adjustments)
             if (productId && isEditing) {
-                // Check main stock
-                if (initialStock !== null && data.stock_quantidade !== initialStock) {
-                    await stockRepository.adjustStock({
-                        produto_id: productId,
-                        quantidade_nova: data.stock_quantidade || 0,
-                        motivo: 'ajuste_manual_form',
-                        notas: 'Ajuste via formulário de edição de produto'
-                    });
-                }
-
                 // Check variant stock
                 if (data.variantes) {
                     for (const variant of data.variantes) {
@@ -226,11 +210,9 @@ export default function ProductForm() {
                 }
             }
 
-            // Handle Image Uploads
             // Handle Media Uploads
             if (productId) {
                 const uploadPromises = [];
-                // Use supabase by default as requested by user's curl
                 const USE_SUPABASE = true;
 
                 if (mainImageFile.length > 0) {
@@ -556,20 +538,33 @@ export default function ProductForm() {
                                     <CardTitle>Logística e Dimensões</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="grid gap-6 md:grid-cols-2">
-                                        <FormField
-                                            control={form.control}
-                                            name="stock_quantidade"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Quantidade em Stock</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
-                                                    </FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
+                                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-6">
+                                        <div className="flex items-start gap-3">
+                                            <div className="mt-0.5">
+                                                <Plus className="w-5 h-5 text-primary" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="font-semibold text-primary">Gestão de Stock via Variantes</p>
+                                                <p className="text-sm text-primary/80">
+                                                    Para gerir o stock deste produto, é necessário criar pelo menos uma variante. 
+                                                    O stock é controlado de forma granular por cada opção do produto.
+                                                </p>
+                                                <Button 
+                                                    type="button" 
+                                                    variant="link" 
+                                                    className="p-0 h-auto text-primary font-bold hover:underline"
+                                                    onClick={() => {
+                                                        form.setValue('tem_variantes', true);
+                                                        toast.info("Por favor, aceda ao separador 'Variantes' para configurar o stock.");
+                                                    }}
+                                                >
+                                                    Ativar Variantes e configurar Stock agora →
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
 
+                                    <div className="grid gap-6 md:grid-cols-2">
                                         <FormField
                                             control={form.control}
                                             name="peso"
@@ -825,7 +820,9 @@ export default function ProductForm() {
                                                 render={({ field }) => (
                                                     <FormItem className="flex items-center gap-2 border rounded-md p-2 h-10 mt-auto">
                                                         <FormLabel className="mb-0 text-xs">Activo</FormLabel>
-                                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                                        <FormControl>
+                                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                                        </FormControl>
                                                     </FormItem>
                                                 )}
                                             />
@@ -869,4 +866,3 @@ export default function ProductForm() {
         </div>
     );
 }
-

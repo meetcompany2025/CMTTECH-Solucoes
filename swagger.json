@@ -232,7 +232,7 @@
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/UserResponse"
+                                        "$ref": "#/components/schemas/UserResponseWithCustomer"
                                     },
                                     "title": "Response Read Users Users  Get"
                                 }
@@ -268,7 +268,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/UserResponse"
+                                    "$ref": "#/components/schemas/UserResponseWithCustomer"
                                 }
                             }
                         }
@@ -314,7 +314,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/UserResponse"
+                                    "$ref": "#/components/schemas/UserResponseWithCustomer"
                                 }
                             }
                         }
@@ -671,11 +671,6 @@
                 ],
                 "summary": "Read Categories",
                 "operationId": "read_categories_categories__get",
-                "security": [
-                    {
-                        "OAuth2PasswordBearer": []
-                    }
-                ],
                 "parameters": [
                     {
                         "name": "skip",
@@ -736,11 +731,6 @@
                 ],
                 "summary": "Read Category",
                 "operationId": "read_category_categories__category_id__get",
-                "security": [
-                    {
-                        "OAuth2PasswordBearer": []
-                    }
-                ],
                 "parameters": [
                     {
                         "name": "category_id",
@@ -889,11 +879,6 @@
                 "summary": "Search Products Endpoint",
                 "description": "Buscar e filtrar produtos com múltiplos critérios.\n\n**Parâmetros de ordenação:**\n- `relevancia` - Relevância (padrão)\n- `preco_asc` - Preço crescente\n- `preco_desc` - Preço decrescente\n- `avaliacao` - Melhor avaliação\n- `novos` - Mais recentes\n- `populares` - Mais vendidos",
                 "operationId": "search_products_endpoint_products_search_get",
-                "security": [
-                    {
-                        "OAuth2PasswordBearer": []
-                    }
-                ],
                 "parameters": [
                     {
                         "name": "q",
@@ -1089,12 +1074,7 @@
                     "404": {
                         "description": "Not found"
                     }
-                },
-                "security": [
-                    {
-                        "OAuth2PasswordBearer": []
-                    }
-                ]
+                }
             }
         },
         "/products/{produto_id}/related": {
@@ -1105,11 +1085,6 @@
                 "summary": "Get Related",
                 "description": "Obter produtos relacionados (mesma categoria, faixa de preço similar).",
                 "operationId": "get_related_products__produto_id__related_get",
-                "security": [
-                    {
-                        "OAuth2PasswordBearer": []
-                    }
-                ],
                 "parameters": [
                     {
                         "name": "produto_id",
@@ -1219,11 +1194,6 @@
                 ],
                 "summary": "Read Products",
                 "operationId": "read_products_products__get",
-                "security": [
-                    {
-                        "OAuth2PasswordBearer": []
-                    }
-                ],
                 "parameters": [
                     {
                         "name": "skip",
@@ -1284,11 +1254,6 @@
                 ],
                 "summary": "Read Product",
                 "operationId": "read_product_products__product_id__get",
-                "security": [
-                    {
-                        "OAuth2PasswordBearer": []
-                    }
-                ],
                 "parameters": [
                     {
                         "name": "product_id",
@@ -2270,16 +2235,30 @@
                     "Stock Management"
                 ],
                 "summary": "Check Alerts",
-                "description": "Check all active alerts and trigger if stock is critical.\n\nThis should be called periodically (e.g., via scheduled task).",
+                "description": "Check all active alerts and trigger if stock is critical.\n\nThis should be called periodically (e.g., via scheduled task).\n\nArgs:\n    enviar_email: Whether to send email alert to admin (default: True)",
                 "operationId": "check_alerts_api_v1_stock_alertas_verificar_get",
+                "parameters": [
+                    {
+                        "name": "enviar_email",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "description": "Enviar alerta por email ao admin",
+                            "default": true,
+                            "title": "Enviar Email"
+                        },
+                        "description": "Enviar alerta por email ao admin"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful Response",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": true,
                                     "type": "object",
+                                    "additionalProperties": true,
                                     "title": "Response Check Alerts Api V1 Stock Alertas Verificar Get"
                                 }
                             }
@@ -2287,6 +2266,16 @@
                     },
                     "404": {
                         "description": "Not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -4429,6 +4418,657 @@
                 ]
             }
         },
+        "/pagamentos/criar": {
+            "post": {
+                "tags": [
+                    "pagamentos"
+                ],
+                "summary": "Criar novo pagamento",
+                "description": "Cria novo registro de pagamento e inicia processo com gateway",
+                "operationId": "criar_pagamento_pagamentos_criar_post",
+                "parameters": [
+                    {
+                        "name": "x-client-ip",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Client-Ip"
+                        }
+                    },
+                    {
+                        "name": "x-user-agent",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-User-Agent"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentInitiateRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentInitiateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/pagamentos/{pagamento_id}/confirmar": {
+            "post": {
+                "tags": [
+                    "pagamentos"
+                ],
+                "summary": "Confirmar pagamento",
+                "description": "Confirma pagamento após redirecionamento do gateway",
+                "operationId": "confirmar_pagamento_pagamentos__pagamento_id__confirmar_post",
+                "parameters": [
+                    {
+                        "name": "pagamento_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Pagamento Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentConfirmRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentConfirmResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/pagamentos/{pagamento_id}/reembolsar": {
+            "post": {
+                "tags": [
+                    "pagamentos"
+                ],
+                "summary": "Reembolsar pagamento",
+                "description": "Reembolsa pagamento completo ou parcial",
+                "operationId": "reembolsar_pagamento_pagamentos__pagamento_id__reembolsar_post",
+                "parameters": [
+                    {
+                        "name": "pagamento_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Pagamento Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentRefundRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentRefundResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/pagamentos/": {
+            "get": {
+                "tags": [
+                    "pagamentos"
+                ],
+                "summary": "Listar pagamentos",
+                "description": "Lista pagamentos com filtros opcionais e paginação",
+                "operationId": "listar_pagamentos_pagamentos__get",
+                "parameters": [
+                    {
+                        "name": "skip",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Número de registros a pular",
+                            "default": 0,
+                            "title": "Skip"
+                        },
+                        "description": "Número de registros a pular"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "minimum": 1,
+                            "description": "Registros por página",
+                            "default": 50,
+                            "title": "Limit"
+                        },
+                        "description": "Registros por página"
+                    },
+                    {
+                        "name": "estado",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/PaymentStatusEnum"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filtrar por estado",
+                            "title": "Estado"
+                        },
+                        "description": "Filtrar por estado"
+                    },
+                    {
+                        "name": "metodo",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/PaymentMethodEnum"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filtrar por método",
+                            "title": "Metodo"
+                        },
+                        "description": "Filtrar por método"
+                    },
+                    {
+                        "name": "data_inicio",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Data inicial",
+                            "title": "Data Inicio"
+                        },
+                        "description": "Data inicial"
+                    },
+                    {
+                        "name": "data_fim",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Data final",
+                            "title": "Data Fim"
+                        },
+                        "description": "Data final"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentListResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/pagamentos/{pagamento_id}": {
+            "get": {
+                "tags": [
+                    "pagamentos"
+                ],
+                "summary": "Obter detalhes de pagamento",
+                "description": "Retorna detalhes completos de um pagamento específico",
+                "operationId": "obter_pagamento_pagamentos__pagamento_id__get",
+                "parameters": [
+                    {
+                        "name": "pagamento_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Pagamento Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentDetailedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/pagamentos/encomenda/{encomenda_id}": {
+            "get": {
+                "tags": [
+                    "pagamentos"
+                ],
+                "summary": "Obter pagamento de encomenda",
+                "description": "Retorna pagamento associado a uma encomenda",
+                "operationId": "obter_pagamento_encomenda_pagamentos_encomenda__encomenda_id__get",
+                "parameters": [
+                    {
+                        "name": "encomenda_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Encomenda Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "$ref": "#/components/schemas/PaymentDetailedResponse"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "title": "Response Obter Pagamento Encomenda Pagamentos Encomenda  Encomenda Id  Get"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/pagamentos/stats/resumo": {
+            "get": {
+                "tags": [
+                    "pagamentos"
+                ],
+                "summary": "Estatísticas de pagamentos",
+                "description": "Retorna estatísticas gerais de pagamentos",
+                "operationId": "obter_estatisticas_pagamentos_stats_resumo_get",
+                "parameters": [
+                    {
+                        "name": "data_inicio",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Data inicial",
+                            "title": "Data Inicio"
+                        },
+                        "description": "Data inicial"
+                    },
+                    {
+                        "name": "data_fim",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Data final",
+                            "title": "Data Fim"
+                        },
+                        "description": "Data final"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentStatistics"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/pagamentos/relatorio/completo": {
+            "get": {
+                "tags": [
+                    "pagamentos"
+                ],
+                "summary": "Relatório completo de pagamentos",
+                "description": "Gera relatório detalhado com análises",
+                "operationId": "gerar_relatorio_pagamentos_relatorio_completo_get",
+                "parameters": [
+                    {
+                        "name": "data_inicio",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Data inicial",
+                            "title": "Data Inicio"
+                        },
+                        "description": "Data inicial"
+                    },
+                    {
+                        "name": "data_fim",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Data final",
+                            "title": "Data Fim"
+                        },
+                        "description": "Data final"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentReportResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/pagamentos/webhook/emis": {
+            "post": {
+                "tags": [
+                    "pagamentos"
+                ],
+                "summary": "Webhook EMIS",
+                "description": "Recebe notificações de pagamento da EMIS",
+                "operationId": "webhook_emis_pagamentos_webhook_emis_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "additionalProperties": true,
+                                "type": "object",
+                                "title": "Payload"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/pagamentos/manutencao/marcar-expirados": {
+            "post": {
+                "tags": [
+                    "pagamentos"
+                ],
+                "summary": "Marcar pagamentos expirados",
+                "description": "Marca pagamentos pendentes expirados como expirados",
+                "operationId": "marcar_expirados_pagamentos_manutencao_marcar_expirados_post",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            }
+        },
         "/": {
             "get": {
                 "tags": [
@@ -4684,6 +5324,130 @@
                     "cliente_id"
                 ],
                 "title": "AddressResponse"
+            },
+            "AddressResponseMinimal": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "tipo": {
+                        "type": "string",
+                        "title": "Tipo"
+                    },
+                    "nome_destinatario": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Nome Destinatario"
+                    },
+                    "telefone": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Telefone"
+                    },
+                    "provincia": {
+                        "type": "string",
+                        "title": "Provincia"
+                    },
+                    "municipio": {
+                        "type": "string",
+                        "title": "Municipio"
+                    },
+                    "bairro": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Bairro"
+                    },
+                    "rua": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Rua"
+                    },
+                    "numero_casa": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Numero Casa"
+                    },
+                    "ponto_referencia": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Ponto Referencia"
+                    },
+                    "codigo_postal": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Codigo Postal"
+                    },
+                    "predefinido": {
+                        "type": "boolean",
+                        "title": "Predefinido",
+                        "default": false
+                    },
+                    "created_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Created At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "tipo",
+                    "provincia",
+                    "municipio"
+                ],
+                "title": "AddressResponseMinimal",
+                "description": "Endereço em formato minimalista para incluir em respostas de usuário"
             },
             "AddressUpdate": {
                 "properties": {
@@ -4950,6 +5714,7 @@
                     },
                     "password": {
                         "type": "string",
+                        "format": "password",
                         "title": "Password"
                     },
                     "scope": {
@@ -4977,6 +5742,7 @@
                                 "type": "null"
                             }
                         ],
+                        "format": "password",
                         "title": "Client Secret"
                     }
                 },
@@ -5902,6 +6668,136 @@
                 ],
                 "title": "CustomerResponse"
             },
+            "CustomerResponseMinimal": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "nome": {
+                        "type": "string",
+                        "title": "Nome"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "title": "Email"
+                    },
+                    "telefone": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Telefone"
+                    },
+                    "nif": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Nif"
+                    },
+                    "data_nascimento": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Data Nascimento"
+                    },
+                    "genero": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Genero"
+                    },
+                    "newsletter_aceite": {
+                        "type": "boolean",
+                        "title": "Newsletter Aceite",
+                        "default": false
+                    },
+                    "total_compras": {
+                        "type": "integer",
+                        "title": "Total Compras"
+                    },
+                    "total_gasto": {
+                        "type": "number",
+                        "title": "Total Gasto"
+                    },
+                    "ultimo_pedido_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Ultimo Pedido At"
+                    },
+                    "created_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Created At"
+                    },
+                    "updated_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Updated At"
+                    },
+                    "enderecos": {
+                        "items": {
+                            "$ref": "#/components/schemas/AddressResponseMinimal"
+                        },
+                        "type": "array",
+                        "title": "Enderecos",
+                        "default": []
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "nome",
+                    "email",
+                    "total_compras",
+                    "total_gasto"
+                ],
+                "title": "CustomerResponseMinimal",
+                "description": "Customer em formato minimalista para incluir em respostas de usuário"
+            },
             "CustomerUpdate": {
                 "properties": {
                     "nome": {
@@ -6235,6 +7131,18 @@
                 },
                 "type": "object",
                 "title": "DeliveryMethodUpdate"
+            },
+            "EMISPaymentTypeEnum": {
+                "type": "string",
+                "enum": [
+                    "CREDITCARD",
+                    "DEBITCARD",
+                    "MBWAY",
+                    "REFERENCIA",
+                    "BOLETO"
+                ],
+                "title": "EMISPaymentTypeEnum",
+                "description": "Tipos de pagamento EMIS"
             },
             "EmailNotificationResponse": {
                 "properties": {
@@ -6798,6 +7706,956 @@
                     "email"
                 ],
                 "title": "PasswordResetRequest"
+            },
+            "PaymentConfirmRequest": {
+                "properties": {
+                    "pagamento_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Pagamento Id",
+                        "description": "ID do pagamento"
+                    },
+                    "codigo_confirmacao": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Codigo Confirmacao",
+                        "description": "Código EMIS de confirmação"
+                    },
+                    "gateway_transacao_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Gateway Transacao Id",
+                        "description": "ID da transação no gateway"
+                    },
+                    "dados_adicionais": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Dados Adicionais",
+                        "description": "Dados adicionais"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "pagamento_id"
+                ],
+                "title": "PaymentConfirmRequest",
+                "description": "Requisição para confirmar pagamento"
+            },
+            "PaymentConfirmResponse": {
+                "properties": {
+                    "pagamento_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Pagamento Id"
+                    },
+                    "estado": {
+                        "type": "string",
+                        "title": "Estado"
+                    },
+                    "mensagem": {
+                        "type": "string",
+                        "title": "Mensagem"
+                    },
+                    "data_confirmacao": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Data Confirmacao"
+                    },
+                    "referencia_pagamento": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Referencia Pagamento"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "pagamento_id",
+                    "estado",
+                    "mensagem",
+                    "data_confirmacao",
+                    "referencia_pagamento"
+                ],
+                "title": "PaymentConfirmResponse",
+                "description": "Resposta de confirmação de pagamento"
+            },
+            "PaymentDetailedResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "encomenda_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Encomenda Id"
+                    },
+                    "referencia_pagamento": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Referencia Pagamento"
+                    },
+                    "metodo": {
+                        "type": "string",
+                        "title": "Metodo"
+                    },
+                    "valor": {
+                        "type": "number",
+                        "title": "Valor"
+                    },
+                    "moeda": {
+                        "type": "string",
+                        "title": "Moeda"
+                    },
+                    "estado": {
+                        "type": "string",
+                        "title": "Estado"
+                    },
+                    "emis_transacao_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Emis Transacao Id"
+                    },
+                    "emis_referencia": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Emis Referencia"
+                    },
+                    "emis_status": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Emis Status"
+                    },
+                    "data_pagamento": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Data Pagamento"
+                    },
+                    "data_expiracao": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Data Expiracao"
+                    },
+                    "tentativas": {
+                        "type": "integer",
+                        "title": "Tentativas"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "gateway_transacao_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Gateway Transacao Id"
+                    },
+                    "gateway_resposta": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Gateway Resposta"
+                    },
+                    "comprovativo_ficheiro": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Comprovativo Ficheiro"
+                    },
+                    "nif_cliente": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Nif Cliente"
+                    },
+                    "nome_cliente": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Nome Cliente"
+                    },
+                    "email_cliente": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Email Cliente"
+                    },
+                    "telefone_cliente": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Telefone Cliente"
+                    },
+                    "url_retorno_sucesso": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Url Retorno Sucesso"
+                    },
+                    "url_retorno_falha": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Url Retorno Falha"
+                    },
+                    "emis_descricao_erro": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Emis Descricao Erro"
+                    },
+                    "ultima_tentativa": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Ultima Tentativa"
+                    },
+                    "ip_address": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Ip Address"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Updated At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "encomenda_id",
+                    "referencia_pagamento",
+                    "metodo",
+                    "valor",
+                    "moeda",
+                    "estado",
+                    "emis_transacao_id",
+                    "emis_referencia",
+                    "emis_status",
+                    "data_pagamento",
+                    "data_expiracao",
+                    "tentativas",
+                    "created_at",
+                    "gateway_transacao_id",
+                    "gateway_resposta",
+                    "comprovativo_ficheiro",
+                    "nif_cliente",
+                    "nome_cliente",
+                    "email_cliente",
+                    "telefone_cliente",
+                    "url_retorno_sucesso",
+                    "url_retorno_falha",
+                    "emis_descricao_erro",
+                    "ultima_tentativa",
+                    "ip_address",
+                    "updated_at"
+                ],
+                "title": "PaymentDetailedResponse",
+                "description": "Schema detalhado de pagamento"
+            },
+            "PaymentInitiateRequest": {
+                "properties": {
+                    "encomenda_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Encomenda Id",
+                        "description": "ID da encomenda"
+                    },
+                    "metodo": {
+                        "$ref": "#/components/schemas/PaymentMethodEnum",
+                        "description": "Método de pagamento"
+                    },
+                    "moeda": {
+                        "type": "string",
+                        "title": "Moeda",
+                        "default": "AOA"
+                    },
+                    "tipo_pagamento": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EMISPaymentTypeEnum"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "ip_cliente": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Ip Cliente"
+                    },
+                    "user_agent": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "User Agent"
+                    },
+                    "url_retorno": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Url Retorno",
+                        "description": "URL de retorno após pagamento"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "encomenda_id",
+                    "metodo"
+                ],
+                "title": "PaymentInitiateRequest",
+                "description": "Requisição para iniciar pagamento"
+            },
+            "PaymentInitiateResponse": {
+                "properties": {
+                    "pagamento_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Pagamento Id",
+                        "description": "ID do pagamento criado"
+                    },
+                    "estado": {
+                        "type": "string",
+                        "title": "Estado",
+                        "description": "Estado inicial do pagamento"
+                    },
+                    "url_pagamento": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Url Pagamento",
+                        "description": "URL para completar pagamento (EMIS)"
+                    },
+                    "tempo_expiracao": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Tempo Expiracao",
+                        "description": "Tempo até expiração em segundos"
+                    },
+                    "dados_adicionais": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Dados Adicionais"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "pagamento_id",
+                    "estado"
+                ],
+                "title": "PaymentInitiateResponse",
+                "description": "Resposta de iniciação de pagamento"
+            },
+            "PaymentListResponse": {
+                "properties": {
+                    "total": {
+                        "type": "integer",
+                        "title": "Total",
+                        "description": "Total de registros"
+                    },
+                    "pagina": {
+                        "type": "integer",
+                        "title": "Pagina",
+                        "description": "Página atual"
+                    },
+                    "tamanho_pagina": {
+                        "type": "integer",
+                        "title": "Tamanho Pagina",
+                        "description": "Itens por página"
+                    },
+                    "total_paginas": {
+                        "type": "integer",
+                        "title": "Total Paginas",
+                        "description": "Total de páginas"
+                    },
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/PaymentResponse"
+                        },
+                        "type": "array",
+                        "title": "Items",
+                        "description": "Pagamentos da página"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "total",
+                    "pagina",
+                    "tamanho_pagina",
+                    "total_paginas",
+                    "items"
+                ],
+                "title": "PaymentListResponse",
+                "description": "Lista de pagamentos com paginação"
+            },
+            "PaymentMethodEnum": {
+                "type": "string",
+                "enum": [
+                    "emis",
+                    "mbway",
+                    "cartao",
+                    "transferencia"
+                ],
+                "title": "PaymentMethodEnum",
+                "description": "Métodos de pagamento suportados"
+            },
+            "PaymentRefundRequest": {
+                "properties": {
+                    "pagamento_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Pagamento Id",
+                        "description": "ID do pagamento a reembolsar"
+                    },
+                    "valor": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Valor",
+                        "description": "Valor do reembolso (vazio = total)"
+                    },
+                    "motivo": {
+                        "type": "string",
+                        "title": "Motivo",
+                        "description": "Motivo do reembolso"
+                    },
+                    "referencia_cliente": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Referencia Cliente",
+                        "description": "Referência do cliente"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "pagamento_id",
+                    "motivo"
+                ],
+                "title": "PaymentRefundRequest",
+                "description": "Requisição de reembolso"
+            },
+            "PaymentRefundResponse": {
+                "properties": {
+                    "pagamento_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Pagamento Id"
+                    },
+                    "estado": {
+                        "type": "string",
+                        "title": "Estado"
+                    },
+                    "valor_reembolsado": {
+                        "type": "number",
+                        "title": "Valor Reembolsado"
+                    },
+                    "data_reembolso": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Data Reembolso"
+                    },
+                    "referencia_reembolso": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Referencia Reembolso"
+                    },
+                    "mensagem": {
+                        "type": "string",
+                        "title": "Mensagem"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "pagamento_id",
+                    "estado",
+                    "valor_reembolsado",
+                    "data_reembolso",
+                    "referencia_reembolso",
+                    "mensagem"
+                ],
+                "title": "PaymentRefundResponse",
+                "description": "Resposta de reembolso"
+            },
+            "PaymentReportResponse": {
+                "properties": {
+                    "periodo_inicio": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Periodo Inicio"
+                    },
+                    "periodo_fim": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Periodo Fim"
+                    },
+                    "moeda": {
+                        "type": "string",
+                        "title": "Moeda"
+                    },
+                    "estatisticas": {
+                        "$ref": "#/components/schemas/PaymentStatistics"
+                    },
+                    "pagamentos_por_metodo": {
+                        "additionalProperties": {
+                            "type": "integer"
+                        },
+                        "type": "object",
+                        "title": "Pagamentos Por Metodo",
+                        "description": "Contagem por método"
+                    },
+                    "pagamentos_por_estado": {
+                        "additionalProperties": {
+                            "type": "integer"
+                        },
+                        "type": "object",
+                        "title": "Pagamentos Por Estado",
+                        "description": "Contagem por estado"
+                    },
+                    "pagamentos_por_dia": {
+                        "additionalProperties": {
+                            "type": "integer"
+                        },
+                        "type": "object",
+                        "title": "Pagamentos Por Dia",
+                        "description": "Contagem por dia"
+                    },
+                    "valor_por_metodo": {
+                        "additionalProperties": {
+                            "type": "number"
+                        },
+                        "type": "object",
+                        "title": "Valor Por Metodo",
+                        "description": "Valor total por método"
+                    },
+                    "valor_por_estado": {
+                        "additionalProperties": {
+                            "type": "number"
+                        },
+                        "type": "object",
+                        "title": "Valor Por Estado",
+                        "description": "Valor total por estado"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "periodo_inicio",
+                    "periodo_fim",
+                    "moeda",
+                    "estatisticas",
+                    "pagamentos_por_metodo",
+                    "pagamentos_por_estado",
+                    "pagamentos_por_dia",
+                    "valor_por_metodo",
+                    "valor_por_estado"
+                ],
+                "title": "PaymentReportResponse",
+                "description": "Relatório completo de pagamentos"
+            },
+            "PaymentResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "encomenda_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Encomenda Id"
+                    },
+                    "referencia_pagamento": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Referencia Pagamento"
+                    },
+                    "metodo": {
+                        "type": "string",
+                        "title": "Metodo"
+                    },
+                    "valor": {
+                        "type": "number",
+                        "title": "Valor"
+                    },
+                    "moeda": {
+                        "type": "string",
+                        "title": "Moeda"
+                    },
+                    "estado": {
+                        "type": "string",
+                        "title": "Estado"
+                    },
+                    "emis_transacao_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Emis Transacao Id"
+                    },
+                    "emis_referencia": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Emis Referencia"
+                    },
+                    "emis_status": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Emis Status"
+                    },
+                    "data_pagamento": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Data Pagamento"
+                    },
+                    "data_expiracao": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Data Expiracao"
+                    },
+                    "tentativas": {
+                        "type": "integer",
+                        "title": "Tentativas"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "encomenda_id",
+                    "referencia_pagamento",
+                    "metodo",
+                    "valor",
+                    "moeda",
+                    "estado",
+                    "emis_transacao_id",
+                    "emis_referencia",
+                    "emis_status",
+                    "data_pagamento",
+                    "data_expiracao",
+                    "tentativas",
+                    "created_at"
+                ],
+                "title": "PaymentResponse",
+                "description": "Schema de resposta para pagamento"
+            },
+            "PaymentStatistics": {
+                "properties": {
+                    "total_pagamentos": {
+                        "type": "integer",
+                        "title": "Total Pagamentos",
+                        "description": "Total de pagamentos processados"
+                    },
+                    "total_sucesso": {
+                        "type": "integer",
+                        "title": "Total Sucesso",
+                        "description": "Pagamentos com sucesso"
+                    },
+                    "total_falha": {
+                        "type": "integer",
+                        "title": "Total Falha",
+                        "description": "Pagamentos com falha"
+                    },
+                    "total_pendente": {
+                        "type": "integer",
+                        "title": "Total Pendente",
+                        "description": "Pagamentos pendentes"
+                    },
+                    "total_reembolsado": {
+                        "type": "integer",
+                        "title": "Total Reembolsado",
+                        "description": "Pagamentos reembolsados"
+                    },
+                    "valor_total_processado": {
+                        "type": "number",
+                        "title": "Valor Total Processado",
+                        "description": "Valor total processado"
+                    },
+                    "valor_em_pendente": {
+                        "type": "number",
+                        "title": "Valor Em Pendente",
+                        "description": "Valor em pagamentos pendentes"
+                    },
+                    "valor_reembolsado": {
+                        "type": "number",
+                        "title": "Valor Reembolsado",
+                        "description": "Valor total reembolsado"
+                    },
+                    "taxa_sucesso_percentual": {
+                        "type": "number",
+                        "title": "Taxa Sucesso Percentual",
+                        "description": "Percentual de sucesso"
+                    },
+                    "metodo_mais_usado": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Metodo Mais Usado",
+                        "description": "Método de pagamento mais usado"
+                    },
+                    "gateway_mais_usado": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Gateway Mais Usado",
+                        "description": "Gateway mais usado"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "total_pagamentos",
+                    "total_sucesso",
+                    "total_falha",
+                    "total_pendente",
+                    "total_reembolsado",
+                    "valor_total_processado",
+                    "valor_em_pendente",
+                    "valor_reembolsado",
+                    "taxa_sucesso_percentual"
+                ],
+                "title": "PaymentStatistics",
+                "description": "Estatísticas de pagamentos"
+            },
+            "PaymentStatusEnum": {
+                "type": "string",
+                "enum": [
+                    "pendente",
+                    "processando",
+                    "sucesso",
+                    "falha",
+                    "reembolsado",
+                    "expirado"
+                ],
+                "title": "PaymentStatusEnum",
+                "description": "Estados possíveis do pagamento"
             },
             "ProductCreate": {
                 "properties": {
@@ -8106,7 +9964,7 @@
                         "type": "string",
                         "maxLength": 50,
                         "title": "Role",
-                        "default": "USER"
+                        "default": "customer"
                     },
                     "preferences": {
                         "anyOf": [
@@ -8190,7 +10048,7 @@
                         "type": "string",
                         "maxLength": 50,
                         "title": "Role",
-                        "default": "USER"
+                        "default": "customer"
                     },
                     "preferences": {
                         "anyOf": [
@@ -8229,6 +10087,86 @@
                     "id"
                 ],
                 "title": "UserResponse"
+            },
+            "UserResponseWithCustomer": {
+                "properties": {
+                    "avatar_url": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 256
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Avatar Url"
+                    },
+                    "username": {
+                        "type": "string",
+                        "maxLength": 50,
+                        "title": "Username"
+                    },
+                    "email": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "format": "email",
+                        "title": "Email"
+                    },
+                    "role": {
+                        "type": "string",
+                        "maxLength": 50,
+                        "title": "Role",
+                        "default": "customer"
+                    },
+                    "preferences": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Preferences"
+                    },
+                    "interests": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Interests"
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "cliente": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/CustomerResponseMinimal"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "username",
+                    "email",
+                    "id"
+                ],
+                "title": "UserResponseWithCustomer",
+                "description": "User response com dados opcionais do cliente e endereços"
             },
             "UserUpdate": {
                 "properties": {

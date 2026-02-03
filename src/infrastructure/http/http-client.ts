@@ -30,7 +30,15 @@ httpClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         const token = TokenStorage.getAccessToken();
 
-        if (token && config.headers) {
+        // Add auth token for all requests except public endpoints
+        const isPublicEndpoint = (
+            config.url?.includes('/categories/') || 
+            config.url?.includes('/products/') ||
+            config.url?.includes('/auth/auth') ||
+            config.url?.includes('/auth/register')
+        );
+        
+        if (token && config.headers && !isPublicEndpoint) {
             config.headers.Authorization = `Bearer ${token}`;
         }
 
@@ -50,7 +58,7 @@ httpClient.interceptors.response.use(
     },
     async (error: AxiosError) => {
         if (error.response?.status === 401) {
-            // Unauthorized - clear tokens and redirect to login
+            // Unauthorized - clear tokens and redirect to auth
             TokenStorage.clearTokens();
 
             // Dispatch custom event for auth context to handle

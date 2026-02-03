@@ -44,6 +44,7 @@ export function Footer() {
                 { name: "Portfólio", href: "/portfolio" },
                 { name: "Sobre Nós", href: "/sobre" },
                 { name: "Contactos", href: "/contactos" },
+                { name: "Admin", href: "/admin" },
               ].map((link) => (
                 <li key={link.name}>
                   <Link

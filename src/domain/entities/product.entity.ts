@@ -22,8 +22,6 @@ export interface Product {
     preco_promocional?: number | null;
     custo?: number | null;
     categoria_id: string;
-    marca?: string | null;
-    stock_quantidade: number;
     stock_reservado: number;
     peso?: number | null;
     dimensoes?: {
@@ -73,9 +71,6 @@ export interface ProductCreate {
     meta_description?: string | null;
     meta_keywords?: string | null;
     variantes?: ProductVariant[];
-    // Backward compatibility or internal fields
-    marca?: string | null;
-    stock_quantidade?: number;
 }
 
 export interface ProductUpdate {
@@ -103,9 +98,6 @@ export interface ProductUpdate {
     meta_description?: string | null;
     meta_keywords?: string | null;
     variantes?: ProductVariant[];
-    // Backward compatibility
-    marca?: string | null;
-    stock_quantidade?: number;
 }
 
 export interface ProductSearchParams {

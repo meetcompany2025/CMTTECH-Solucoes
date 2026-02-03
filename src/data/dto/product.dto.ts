@@ -13,8 +13,6 @@ export interface ProductResponseDTO {
     preco_promocional?: number | null;
     custo?: number | null;
     categoria_id: string;
-    marca?: string | null;
-    stock_quantidade: number;
     stock_reservado: number;
     peso?: number | null;
     dimensoes?: Record<string, number> | null;
@@ -104,8 +102,6 @@ export class ProductMapper {
             preco_promocional: dto.preco_promocional,
             custo: dto.custo,
             categoria_id: dto.categoria_id,
-            marca: dto.marca,
-            stock_quantidade: dto.stock_quantidade,
             stock_reservado: dto.stock_reservado,
             peso: dto.peso,
             dimensoes: dto.dimensoes as any,

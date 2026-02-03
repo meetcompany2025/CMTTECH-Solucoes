@@ -1,14 +1,16 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetFooter,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
-import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { Minus, Plus, Trash2, ShoppingBag, X, ShieldCheck, Truck, ArrowRight } from "lucide-react";
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat("pt-AO", {
@@ -19,110 +21,182 @@ function formatPrice(price: number) {
 }
 
 export function CartDrawer() {
-  const { items, isOpen, setIsOpen, updateQuantity, removeItem, totalPrice, totalItems } = useCart();
+  const { items, isOpen, setIsOpen, updateQuantity, removeItem, totalPrice, totalItems, clearCart } = useCart();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleCheckout = () => {
+    if (!user) {
+      toast({
+        title: "Login necessário",
+        description: "Você precisa estar logado para finalizar a compra.",
+        variant: "destructive"
+      });
+      setIsOpen(false);
+      navigate('/auth');
+      return;
+    }
+    
+    setIsOpen(false);
+    navigate('/checkout');
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetContent className="flex flex-col w-full sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5" />
-            Carrinho ({totalItems} {totalItems === 1 ? "item" : "itens"})
-          </SheetTitle>
-        </SheetHeader>
+      <SheetContent className="flex flex-col w-full sm:max-w-md p-0">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-4 border-b bg-gray-50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
+              <ShoppingBag className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-900">Carrinho</h2>
+              <p className="text-sm text-gray-500">{totalItems} {totalItems === 1 ? "item" : "itens"}</p>
+            </div>
+          </div>
+        </div>
 
         {items.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center">
-            <ShoppingBag className="h-16 w-16 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium text-foreground mb-2">
-              O seu carrinho está vazio
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <ShoppingBag className="h-10 w-10 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              Carrinho vazio
+            </h3>
+            <p className="text-gray-500 text-sm mb-6">
+              Adicione produtos para começar a comprar
             </p>
-            <p className="text-muted-foreground mb-6">
-              Adicione produtos para continuar
-            </p>
-            <Button variant="secondary" onClick={() => setIsOpen(false)} asChild>
-              <Link to="/loja">Ver Produtos</Link>
+            <Button 
+              onClick={() => setIsOpen(false)} 
+              asChild
+              className="bg-gray-900 hover:bg-gray-800"
+            >
+              <Link to="/loja">Explorar Produtos</Link>
             </Button>
           </div>
         ) : (
           <>
-            <div className="flex-1 overflow-y-auto py-4 space-y-4">
-              {items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex gap-4 p-4 bg-muted rounded-lg"
-                >
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-20 h-20 object-cover rounded-md"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-foreground text-sm line-clamp-2">
-                      {item.name}
-                    </h4>
-                    <p className="text-xs text-muted-foreground">{item.brand}</p>
-                    <p className="text-sm font-bold text-secondary mt-1">
-                      {formatPrice(item.price)}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <span className="text-sm font-medium w-8 text-center">
-                        {item.quantity}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 ml-auto text-destructive hover:text-destructive"
-                        onClick={() => removeItem(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+            {/* Items List */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="px-4 py-3">
+                {items.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className={`flex gap-3 py-4 ${index !== items.length - 1 ? 'border-b' : ''}`}
+                  >
+                    {/* Image */}
+                    <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-contain p-1"
+                      />
+                    </div>
+                    
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start gap-2">
+                        <h4 className="font-medium text-gray-900 text-sm line-clamp-2 leading-tight">
+                          {item.name}
+                        </h4>
+                        <button
+                          onClick={() => removeItem(item.id)}
+                          className="p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                      
+                      <p className="text-xs text-gray-500 mt-0.5">{item.brand}</p>
+                      
+                      <div className="flex items-center justify-between mt-3">
+                        {/* Quantity Controls */}
+                        <div className="flex items-center border rounded-lg">
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="p-1.5 hover:bg-gray-100 transition-colors"
+                            disabled={item.quantity <= 1}
+                          >
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="px-3 text-sm font-medium min-w-[32px] text-center">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="p-1.5 hover:bg-gray-100 transition-colors"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        
+                        {/* Price */}
+                        <div className="text-right">
+                          <p className="font-semibold text-gray-900">
+                            {formatPrice(item.price * item.quantity)}
+                          </p>
+                          {item.quantity > 1 && (
+                            <p className="text-xs text-gray-500">
+                              {formatPrice(item.price)} cada
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            <SheetFooter className="border-t border-border pt-4 flex-col gap-4">
-              <div className="flex justify-between w-full text-lg">
-                <span className="font-medium">Total:</span>
-                <span className="font-bold text-secondary">
-                  {formatPrice(totalPrice)}
+            {/* Footer */}
+            <div className="border-t bg-gray-50">
+              {/* Trust Badges */}
+              <div className="flex justify-center gap-6 py-3 border-b text-xs text-gray-500">
+                <span className="flex items-center gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5" /> Pagamento Seguro
+                </span>
+                <span className="flex items-center gap-1">
+                  <Truck className="h-3.5 w-3.5" /> Entrega Rápida
                 </span>
               </div>
-              <Button
-                variant="hero"
-                size="lg"
-                className="w-full"
-                onClick={() => setIsOpen(false)}
-                asChild
-              >
-                <Link to="/checkout">Finalizar Compra</Link>
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setIsOpen(false)}
-              >
-                Continuar a Comprar
-              </Button>
-            </SheetFooter>
+              
+              {/* Summary */}
+              <div className="px-4 py-4 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Subtotal ({totalItems} itens)</span>
+                  <span className="font-medium">{formatPrice(totalPrice)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Envio</span>
+                  <span className="text-gray-500">Calculado no checkout</span>
+                </div>
+                <div className="flex justify-between pt-3 border-t">
+                  <span className="font-semibold text-gray-900">Total</span>
+                  <span className="text-xl font-bold text-gray-900">{formatPrice(totalPrice)}</span>
+                </div>
+              </div>
+              
+              {/* Actions */}
+              <div className="px-4 pb-4 space-y-2">
+                <Button
+                  onClick={handleCheckout}
+                  className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-base font-medium"
+                >
+                  Finalizar Compra
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full text-gray-600 hover:text-gray-900"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Continuar comprando
+                </Button>
+              </div>
+            </div>
           </>
         )}
       </SheetContent>
